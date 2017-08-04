@@ -27,6 +27,7 @@ class NestCurrentSource(StandardCurrentSource):
     def __init__(self, **parameters):
         self._device = nest.Create(self.nest_name)
         self.cell_list = []
+        self.phase_given = 0.0  # required for PR #502
         parameter_space = ParameterSpace(self.default_parameters,
                                          self.get_schema(),
                                          shape=(1,))
@@ -43,10 +44,30 @@ class NestCurrentSource(StandardCurrentSource):
             self.cell_list = [cell for cell in cells]
         else:
             self.cell_list = cells
-        nest.Connect(self._device, self.cell_list)
+        nest.Connect(self._device, self.cell_list, syn_spec={"delay": state.min_delay})
 
     def _delay_correction(self, value):
-        return value - state.min_delay
+        """
+        A change in a device requires a min_delay to take effect at the target
+        """
+        corrected = value - state.min_delay
+        # set negative times to zero
+        if isinstance(value, numpy.ndarray):
+            corrected = numpy.where(corrected > 0, corrected, 0.0)
+        else:
+            corrected = max(corrected, 0.0)
+        return corrected
+
+    def _phase_correction(self, start, freq, phase):
+        """
+        Fixes #497 (PR #502)
+        Tweaks the value of phase supplied to NEST ACSource
+        so as to remain consistent with other simulators
+        """
+        phase_fix = ( (phase*numpy.pi/180) - (2*numpy.pi*freq*start/1000)) * 180/numpy.pi
+        phase_fix.shape = (1)
+        phase_fix = phase_fix.evaluate()[0]
+        nest.SetStatus(self._device, {'phase': phase_fix})
 
     def set_native_parameters(self, parameters):
         parameters.evaluate(simplify=True)
@@ -65,6 +86,14 @@ class NestCurrentSource(StandardCurrentSource):
                                               'amplitude_times': times})
             elif key in ("start", "stop"):
                 nest.SetStatus(self._device, {key: self._delay_correction(value)})
+                if key == "start" and type(self).__name__ == "ACSource":
+                    self._phase_correction(self.start, self.frequency, self.phase_given)
+            elif key == "frequency":
+                nest.SetStatus(self._device, {key: value})
+                self._phase_correction(self.start, self.frequency, self.phase_given)
+            elif key == "phase":
+                self.phase_given = value
+                self._phase_correction(self.start, self.frequency, self.phase_given)
             elif not key == "amplitude_times":
                 nest.SetStatus(self._device, {key: value})
 

@@ -10,10 +10,11 @@ import nest
 from pyNN import recording
 from pyNN.nest import simulator
 
+# todo: this information should come from the cell type classes
 VARIABLE_MAP = {'v': 'V_m', 'gsyn_exc': 'g_ex', 'gsyn_inh': 'g_in', 'u': 'U_m',
-                'w': 'w'}
+                'w': 'w', 'i_eta': 'I_stc', 'v_t': 'E_sfa'}
 REVERSE_VARIABLE_MAP = dict((v, k) for k, v in VARIABLE_MAP.items())
-SCALE_FACTORS = {'v': 1, 'gsyn_exc': 0.001, 'gsyn_inh': 0.001, 'w': 0.001}
+SCALE_FACTORS = {'v': 1, 'gsyn_exc': 0.001, 'gsyn_inh': 0.001, 'w': 0.001, 'i_eta': 0.001, 'v_t': 1}
 
 logger = logging.getLogger("PyNN")
 
@@ -87,7 +88,11 @@ class SpikeDetector(RecordingDevice):
 
     def connect_to_cells(self):
         assert not self._connected
-        nest.Connect(list(self._all_ids), list(self.device), {'rule': 'all_to_all'}, {'model': 'static_synapse'})
+        nest.Connect(list(self._all_ids),
+                     list(self.device),
+                     {'rule': 'all_to_all'},
+                     {'model': 'static_synapse',
+                      'delay': simulator.state.min_delay})
         self._connected = True
 
     def get_spiketimes(self, desired_ids):
@@ -121,7 +126,11 @@ class Multimeter(RecordingDevice):
 
     def connect_to_cells(self):
         assert not self._connected
-        nest.Connect(list(self.device), list(self._all_ids), {'rule': 'all_to_all'}, {'model': 'static_synapse'})
+        nest.Connect(list(self.device),
+                     list(self._all_ids),
+                     {'rule': 'all_to_all'},
+                     {'model': 'static_synapse',
+                      'delay': simulator.state.min_delay})
         self._connected = True
 
     @property
