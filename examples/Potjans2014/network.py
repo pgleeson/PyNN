@@ -8,6 +8,7 @@ from connectivity import FixedTotalNumberConnect
 from pyNN.random import NumpyRNG, RandomDistribution
 from pyNN.space import RandomStructure, Cuboid
 import numpy as np
+import math
 
 
 class Network:
@@ -25,14 +26,25 @@ class Network:
         # Create cortical populations
         self.pops = {}
         layer_structures = {}
+        total_cells = 0 
+        
+        x_dim_scaled = x_dimension * math.sqrt(N_scaling)
+        z_dim_scaled = z_dimension * math.sqrt(N_scaling)
+        
+        default_cell_radius = 10 # for visualisation 
+        default_input_radius = 5 # for visualisation 
+        
         for layer in layers:
             self.pops[layer] = {}
             for pop in pops:
+                
                 y_offset = 0
-                if layer == 'L5': y_offset = layer_thicknesses['L6']
-                if layer == 'L4': y_offset = layer_thicknesses['L6']+layer_thicknesses['L5']
-                if layer == 'L23': y_offset = layer_thicknesses['L6']+layer_thicknesses['L5']+layer_thicknesses['L23']
-                layer_volume = Cuboid(x_dimension,layer_thicknesses[layer],z_dimension)
+                if layer == 'L6': y_offset = layer_thicknesses['L6']/2
+                if layer == 'L5': y_offset = layer_thicknesses['L6']+layer_thicknesses['L5']/2
+                if layer == 'L4': y_offset = layer_thicknesses['L6']+layer_thicknesses['L5']+layer_thicknesses['L4']/2
+                if layer == 'L23': y_offset = layer_thicknesses['L6']+layer_thicknesses['L5']+layer_thicknesses['L4']+layer_thicknesses['L23']/2
+                
+                layer_volume = Cuboid(x_dim_scaled,layer_thicknesses[layer],z_dim_scaled)
                 layer_structures[layer] = RandomStructure(layer_volume, origin=(0,y_offset,0))
                 
                 self.pops[layer][pop] = sim.Population(int(N_full[layer][pop] * \
@@ -42,9 +54,35 @@ class Network:
                 self.pops[layer][pop].initialize(v=distr)
                 # Store whether population is inhibitory or excitatory
                 self.pops[layer][pop].annotate(type=pop)
+                
+                self.pops[layer][pop].annotate(radius=default_cell_radius)
+                self.pops[layer][pop].annotate(structure=str(layer_structures[layer]))
+                
                 this_pop = self.pops[layer][pop]
                 print("Created population %s with %i cells"%(this_pop.label,this_pop.size))
+                try:
+                    import opencortex.utils.color as occ
+                    color='0 0 0'
+                    if layer == 'L23':
+                        if pop=='E': color = occ.L23_PRINCIPAL_CELL
+                        if pop=='I': color = occ.L23_INTERNEURON
+                    if layer == 'L4':
+                        if pop=='E': color = occ.L4_PRINCIPAL_CELL
+                        if pop=='I': color = occ.L4_INTERNEURON
+                    if layer == 'L5':
+                        if pop=='E': color = occ.L5_PRINCIPAL_CELL
+                        if pop=='I': color = occ.L5_INTERNEURON
+                    if layer == 'L6':
+                        if pop=='E': color = occ.L6_PRINCIPAL_CELL
+                        if pop=='I': color = occ.L6_INTERNEURON
+                            
+                    self.pops[layer][pop].annotate(color=color)
+                except:
+                    # Don't worry about it, it's just metadata
+                    pass
 
+                
+                total_cells += this_pop.size
                 # Spike recording
                 if record_fraction:
                     num_spikes = int(round(this_pop.size * frac_record_spikes))
@@ -61,6 +99,7 @@ class Network:
                         num_v = n_record_v
                     this_pop[0:num_v].record('v')
 
+        print("Finished creating all cell populations (%i cells)"%total_cells)
         # Create thalamic population
         if thalamic_input:
             
@@ -98,6 +137,7 @@ class Network:
             self.w, self.w_ext, self.K_ext, self.DC_amp = scaling.adjust_w_and_ext_to_K(K_full, K_scaling, self.w, self.DC_amp)
         else:
             self.w_ext = w_ext
+            self.K_ext = K_ext
 
         if sim.rank() == 0:
             print('w: %s' % self.w)
@@ -115,6 +155,10 @@ class Network:
                                                        {'rate': bg_rate * self.K_ext[target_layer][target_pop]},
                                                        structure=layer_structures[target_layer],
                                                        label='input_%s_%s'%(target_layer,target_pop))
+                                                       
+                    poisson_generator.annotate(color='0.5 0.5 0')
+                    poisson_generator.annotate(radius=default_input_radius)
+                    
                     conn = sim.OneToOneConnector()
                     syn = sim.StaticSynapse(weight=self.w_ext)
                     sim.Projection(poisson_generator, this_pop, conn, syn, receptor_type='excitatory')

@@ -52,7 +52,7 @@ params_dict = {
     # This scaling was not part of the original study, but this option is included
     # here to enable simulations on small systems that give results similar to
     # full-scale simulations.
-    'K_scaling' : 0.5,
+    'K_scaling' : 0.01,
     # Type of background input. Possible values: 'poisson' or 'DC'
     # If 'DC' is chosen, a constant external current is provided, equal to the mean 
     # current due to the Poisson input used in the default version of the model.
@@ -65,7 +65,7 @@ params_dict = {
     # Fraction of neurons from which to record spikes when record_fraction = True
     'frac_record_spikes' : 0.01,
     # Whether to record membrane potentials
-    'record_v' : False,
+    'record_v' : True,
     # Fixed number of neurons from which to record membrane potentials when 
     # record_v=True and record_fraction = False
     'n_record_v' : 10,
@@ -76,6 +76,7 @@ params_dict = {
 }
 
 # Simulator back-end
+simulator = 'nest'
 simulator = 'neuroml'
 
 # Load params from params_dict into global namespace
@@ -113,15 +114,20 @@ N_full = {
   'L6' : {'E': 14395, 'I': 2948}
 }
 
+N_E_total = N_full['L23']['E']+N_full['L4']['E']+N_full['L5']['E']+N_full['L6']['E']
+
 x_dimension = 1000
 z_dimension = 1000
 thalamus_offset = -300
 
+total_cortical_thickness = 1500.0
+
+# Have the thicknesses proportional to the numbers of E cells in each layer
 layer_thicknesses = {
-  'L23': 300,
-  'L4' : 300,
-  'L5' : 300,
-  'L6' : 300,
+  'L23': total_cortical_thickness*N_full['L23']['E']/N_E_total,
+  'L4' : total_cortical_thickness*N_full['L4']['E']/N_E_total,
+  'L5' : total_cortical_thickness*N_full['L5']['E']/N_E_total,
+  'L6' : total_cortical_thickness*N_full['L6']['E']/N_E_total,
   'thalamus' : 100
 }
 

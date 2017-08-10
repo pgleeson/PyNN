@@ -4,7 +4,7 @@ import os
 import glob
 
 
-def show_raster_bars(t_start, t_stop, n_rec, frac_to_plot, path):
+def show_raster_bars(t_start, t_stop, n_rec, frac_to_plot, path, n_scaling, k_scaling):
 
     # List of spike arrays, one entry for each population
     spikes = []
@@ -33,6 +33,8 @@ def show_raster_bars(t_start, t_stop, n_rec, frac_to_plot, path):
     pops = ['23E', '23I', '4E', '4I', '5E', '5I', '6E', '6I']
     rates = np.zeros(8)
     fig = plt.figure()
+    
+    
     axarr = []
     axarr.append(fig.add_subplot(121))
     axarr.append(fig.add_subplot(122))
@@ -72,6 +74,8 @@ def show_raster_bars(t_start, t_stop, n_rec, frac_to_plot, path):
     axarr[1].set_yticks(np.arange(0.5, 8.5, 1.0))
     axarr[1].set_yticklabels(pops[::-1])
     axarr[1].set_xlabel('rate (spikes/s)')
+    
+    plt.title("Network, N scaling: %s, K scaling: %s"%(n_scaling,k_scaling), x=-.2)
 
     plt.savefig(path + 'result.png')
 

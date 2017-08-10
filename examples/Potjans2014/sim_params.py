@@ -16,7 +16,7 @@ simulator_params = {
       'sim_duration'    : 1000.,  # ms
       'min_delay'       : 0.1,     # ms
       'reference'       : 'TestExport',
-      'save_format'     : 'hdf5'
+      'save_format'     : 'xml'
     }
 }
 
