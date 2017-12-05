@@ -17,7 +17,13 @@ simulator_params = {
       'min_delay'       : 0.1,     # ms
       'reference'       : 'TestExport',
       'save_format'     : 'xml'
-    }
+    },
+    'neuron' :
+    {
+      'timestep'        : 0.1,    # ms
+      'threads'         : 1,
+      'sim_duration'    : 1000.,  # ms
+    },
 }
 
 system_params = {

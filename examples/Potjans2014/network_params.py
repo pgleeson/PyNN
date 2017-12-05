@@ -10,7 +10,7 @@ params_dict = {
     # Whether to make random numbers independent of the number of processes
     'parallel_safe' : True,
     # Fraction of neurons to simulate
-    'N_scaling' : 0.1,
+    'N_scaling' : 0.03,
     # Fraction of in-degrees to simulate. Upon downscaling, synaptic weights are 
     # taken proportional to 1/sqrt(in-degree) and external drive is adjusted 
     # to preserve mean and variances of activity in the diffusion approximation.
@@ -44,7 +44,7 @@ params_dict = {
     # Whether to make random numbers independent of the number of processes
     'parallel_safe' : True,
     # Fraction of neurons to simulate
-    'N_scaling' : 0.01,
+    'N_scaling' : 0.03,
     # Fraction of in-degrees to simulate. Upon downscaling, synaptic weights are 
     # taken proportional to 1/sqrt(in-degree) and external drive is adjusted 
     # to preserve mean and variances of activity in the diffusion approximation.
@@ -72,12 +72,47 @@ params_dict = {
     # Fraction of neurons from which to record membrane potentials when 
     # record_v=True and record_fraction = True
     'frac_record_v' : 0.01,
-  }
+  },
+  'neuron' :
+  { 
+    # Whether to make random numbers independent of the number of processes
+    'parallel_safe' : True,
+    # Fraction of neurons to simulate
+    'N_scaling' : 0.03,
+    # Fraction of in-degrees to simulate. Upon downscaling, synaptic weights are 
+    # taken proportional to 1/sqrt(in-degree) and external drive is adjusted 
+    # to preserve mean and variances of activity in the diffusion approximation.
+    # In-degrees and weights of both intrinsic and extrinsic inputs are adjusted.
+    # This scaling was not part of the original study, but this option is included
+    # here to enable simulations on small systems that give results similar to
+    # full-scale simulations.
+    'K_scaling' : 0.5,
+    # Type of background input. Possible values: 'poisson' or 'DC'
+    # If 'DC' is chosen, a constant external current is provided, equal to the mean 
+    # current due to the Poisson input used in the default version of the model.
+    'input_type' : 'poisson',
+    # Whether to record from a fixed fraction of neurons in each population. 
+    # If False, a fixed number of neurons is recorded.
+    'record_fraction' : True,
+    # Number of neurons from which to record spikes when record_fraction = False
+    'n_record' : 1000,  # TODO: check if each population has at least this nr of neurons; PyNN otherwise just records fewer neurons & calculated rates may be wrong
+    # Fraction of neurons from which to record spikes when record_fraction = True
+    'frac_record_spikes' : 1.,
+    # Whether to record membrane potentials
+    'record_v' : True,
+    # Fixed number of neurons from which to record membrane potentials when 
+    # record_v=True and record_fraction = False
+    'n_record_v' : 20,
+    # Fraction of neurons from which to record membrane potentials when 
+    # record_v=True and record_fraction = True
+    'frac_record_v' : 0.02,
+  },
 }
 
 # Simulator back-end
 simulator = 'nest'
-simulator = 'neuroml'
+#simulator = 'neuroml'
+#simulator = 'neuron'
 
 # Load params from params_dict into global namespace
 globals().update(params_dict[simulator])

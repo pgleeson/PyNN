@@ -103,6 +103,7 @@ class Network:
         # Create thalamic population
         if thalamic_input:
             
+            print("Adding thalamic input")
             layer_volume = Cuboid(x_dimension,layer_thicknesses['thalamus'],z_dimension)
             layer_structure = RandomStructure(layer_volume, origin=(0,thalamus_offset,0))
             self.thalamic_population = sim.Population(
@@ -160,7 +161,7 @@ class Network:
                     poisson_generator.annotate(radius=default_input_radius)
                     
                     conn = sim.OneToOneConnector()
-                    syn = sim.StaticSynapse(weight=self.w_ext)
+                    syn = sim.StaticSynapse(weight=self.w_ext, delay=sim.get_time_step()) 
                     sim.Projection(poisson_generator, this_pop, conn, syn, receptor_type='excitatory')
                 if thalamic_input:
                     # Thalamic inputs
