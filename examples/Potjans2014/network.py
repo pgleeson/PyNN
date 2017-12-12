@@ -59,10 +59,10 @@ class Network:
                 self.pops[layer][pop].annotate(structure=str(layer_structures[layer]))
                 
                 this_pop = self.pops[layer][pop]
-                print("Created population %s with %i cells"%(this_pop.label,this_pop.size))
+                color='0 0 0'
+                radius = 10
                 try:
                     import opencortex.utils.color as occ
-                    color='0 0 0'
                     if layer == 'L23':
                         if pop=='E': color = occ.L23_PRINCIPAL_CELL
                         if pop=='I': color = occ.L23_INTERNEURON
@@ -80,6 +80,7 @@ class Network:
                 except:
                     # Don't worry about it, it's just metadata
                     pass
+                print("Created population %s with %i cells (color: %s)"%(this_pop.label,this_pop.size, color))
 
                 
                 total_cells += this_pop.size
