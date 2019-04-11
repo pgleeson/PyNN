@@ -442,8 +442,8 @@ class BasePopulation(object):
         multiple of the simulation timestep.
         """
         if variables is None:  # reset the list of things to record
-                              # note that if record(None) is called on a view of a population
-                              # recording will be reset for the entire population, not just the view
+                               # note that if record(None) is called on a view of a population
+                               # recording will be reset for the entire population, not just the view
             self.recorder.reset()
         else:
             logger.debug("%s.record('%s')", self.label, variables)
@@ -1144,7 +1144,7 @@ class Assembly(object):
             pindex = boundaries[1:].searchsorted(index, side='right')
             return self.populations[pindex][index - boundaries[pindex]]
         elif isinstance(index, (slice, tuple, list, numpy.ndarray)):
-            if isinstance(index, slice):
+            if isinstance(index, slice) or (hasattr(index, "dtype") and index.dtype == bool):
                 indices = numpy.arange(self.size)[index]
             else:
                 indices = numpy.array(index)
@@ -1451,3 +1451,23 @@ class Assembly(object):
         context = {"label": self.label,
                    "populations": [p.describe(template=None) for p in self.populations]}
         return descriptions.render(engine, template, context)
+
+    def get_annotations(self, annotation_keys, simplify=True):
+        """
+        Get the values of the given annotations for each population in the Assembly.
+        """
+        if isinstance(annotation_keys, basestring):
+            annotation_keys = (annotation_keys,)
+        annotations = defaultdict(list)
+
+        for key in annotation_keys:
+            is_array_annotation = False
+            for p in self.populations:
+                annotation = p.annotations[key]
+                annotations[key].append(annotation)
+                is_array_annotation = isinstance(annotation, numpy.ndarray)
+            if is_array_annotation:
+                annotations[key] = numpy.hstack(annotations[key])
+            if simplify:
+                annotations[key] = simplify_parameter_array(numpy.array(annotations[key]))
+        return annotations
