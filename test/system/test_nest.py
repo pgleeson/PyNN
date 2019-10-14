@@ -186,7 +186,7 @@ def test_tsodyks_markram_synapse():
                          synapse_type=synapse_type)
     neurons.record('gsyn_inh')
     sim.run(100.0)
-    connections = nest.GetConnections(prj._sources.tolist(), synapse_model=prj.nest_synapse_model)
+    connections = nest.GetConnections(numpy.unique(prj._sources).tolist(), synapse_model=prj.nest_synapse_model)
     tau_psc = numpy.array(nest.GetStatus(connections, 'tau_psc'))
     assert_arrays_equal(tau_psc, numpy.arange(0.2, 0.7, 0.1))
 
@@ -228,6 +228,47 @@ def test_native_electrode_types():
     vm = cells.get_data().segments[0].filter(name="v")[0]
     assert_array_equal(vm[:, 0].magnitude, vm[:, 1].magnitude)
     assert_array_equal(vm[:, 2].magnitude, vm[:, 3].magnitude)
+
+
+def test_issue529():
+    # A combination of NEST Common synapse properties and FromListConnector doesn't work
+    if not have_nest:
+        raise SkipTest
+    import nest
+    sim = pyNN.nest
+
+    sim.setup()
+
+    iaf_neuron = sim.native_cell_type('iaf_psc_exp')
+    poisson = sim.native_cell_type('poisson_generator')
+
+    p1 = sim.Population(10, iaf_neuron(tau_m=20.0, tau_syn_ex=3., tau_syn_in=3.))
+    p2 = sim.Population(10, iaf_neuron(tau_m=20.0, tau_syn_ex=3., tau_syn_in=3.))
+
+    nest.SetStatus(list(p2), [{'tau_minus': 20.}])
+
+    stdp = sim.native_synapse_type("stdp_synapse_hom")(**{
+        'lambda': 0.005,
+        'mu_plus': 0.,
+        'mu_minus': 0.,
+        'alpha': 1.1,
+        'tau_plus': 20.,
+        'Wmax': 10.,
+    })
+
+    W = numpy.random.rand(5)
+
+    connections = [
+        (0, 0, W[0]),
+        (0, 1, W[1]),
+        (0, 2, W[2]),
+        (1, 5, W[3]),
+        (6, 1, W[4]),
+    ]
+
+    ee_connector = sim.FromListConnector(connections, column_names=["weight"])
+
+    prj_plastic = sim.Projection(p1, p2, ee_connector, receptor_type='excitatory', synapse_type=stdp)
 
 
 if __name__ == '__main__':
